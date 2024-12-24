@@ -2,41 +2,31 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/jenkins-docs/simple-java-maven-app'
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                // Build the project without running tests
+                sh 'mvn -B -DskipTests clean package'
             }
         }
 
         stage('Test') {
             steps {
+                // Run the tests
                 sh 'mvn test'
             }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Deploying application...'
-                // Add your deployment steps here
+            post {
+                always {
+                    // Archive the test results
+                    junit 'target/surefire-reports/*.xml'
+                }
             }
         }
-    }
 
-    post {
-        always {
-            echo 'Pipeline completed.'
-        }
-        success {
-            echo 'Build succeeded.'
-        }
-        failure {
-            echo 'Build failed.'
+        stage('Deliver') {
+            steps {
+                // Deliver the artifact (ensure the script exists and is executable)
+                sh './jenkins/scripts/deliver.sh'
+            }
         }
     }
 }
